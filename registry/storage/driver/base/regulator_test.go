@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/docker/distribution/testutil/tracing"
 )
 
 func TestRegulatorEnterExit(t *testing.T) {
@@ -83,7 +85,7 @@ func TestGetLimitFromParameter(t *testing.T) {
 	}
 
 	for _, item := range tests {
-		t.Run(fmt.Sprint(item.Input), func(t *testing.T) {
+		tracing.GetTracedTest(t).Run(fmt.Sprint(item.Input), func(t *testing.T) {
 			actual, err := GetLimitFromParameter(item.Input, item.Min, item.Default)
 
 			if err != nil && item.Err != nil && err.Error() != item.Err.Error() {

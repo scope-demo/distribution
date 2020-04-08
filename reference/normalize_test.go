@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/docker/distribution/digestset"
+	tracing "github.com/docker/distribution/testutil/tracing"
 	"github.com/opencontainers/go-digest"
 )
 
@@ -687,7 +688,7 @@ func TestParseDockerRef(t *testing.T) {
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.name, func(t *testing.T) {
+		tracing.GetTracedTest(t).Run(test.name, func(t *testing.T) {
 			normalized, err := ParseDockerRef(test.input)
 			if err != nil {
 				t.Fatal(err)

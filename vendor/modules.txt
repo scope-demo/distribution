@@ -174,19 +174,19 @@ go.opencensus.io/trace/tracestate
 go.opencensus.io/resource
 go.opencensus.io
 # go.undefinedlabs.com/scopeagent v0.1.16-0.20200407085120-9d2f515cb15a
-go.undefinedlabs.com/scopeagent/autoinstrument
 go.undefinedlabs.com/scopeagent
+go.undefinedlabs.com/scopeagent/instrumentation/testing
+go.undefinedlabs.com/scopeagent/autoinstrument
 go.undefinedlabs.com/scopeagent/agent
 go.undefinedlabs.com/scopeagent/instrumentation
-go.undefinedlabs.com/scopeagent/instrumentation/testing
 go.undefinedlabs.com/scopeagent/instrumentation/logging
-go.undefinedlabs.com/scopeagent/env
+go.undefinedlabs.com/scopeagent/ast
 go.undefinedlabs.com/scopeagent/errors
 go.undefinedlabs.com/scopeagent/reflection
 go.undefinedlabs.com/scopeagent/runner
 go.undefinedlabs.com/scopeagent/tags
 go.undefinedlabs.com/scopeagent/tracer
-go.undefinedlabs.com/scopeagent/ast
+go.undefinedlabs.com/scopeagent/env
 go.undefinedlabs.com/scopeagent/tracer/wire
 # golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
 golang.org/x/crypto/acme

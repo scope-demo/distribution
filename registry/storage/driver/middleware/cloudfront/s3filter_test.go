@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	dcontext "github.com/docker/distribution/context"
+	"github.com/docker/distribution/testutil/tracing"
 
+	dcontext "github.com/docker/distribution/context"
 	"reflect" // used as a replacement for testify
 )
 
@@ -292,7 +293,7 @@ func TestEligibleForS3(t *testing.T) {
 	for _, testCase := range cases {
 		name := fmt.Sprintf("Client IP = %v",
 			testCase.Context.Value("http.request.ip"))
-		t.Run(name, func(t *testing.T) {
+		tracing.GetTracedTest(t).Run(name, func(t *testing.T) {
 			assertEqual(t, testCase.Expected, eligibleForS3(testCase.Context, awsIPs))
 		})
 	}
@@ -327,7 +328,7 @@ func TestEligibleForS3WithAWSIPNotInitialized(t *testing.T) {
 	for _, testCase := range cases {
 		name := fmt.Sprintf("Client IP = %v",
 			testCase.Context.Value("http.request.ip"))
-		t.Run(name, func(t *testing.T) {
+		tracing.GetTracedTest(t).Run(name, func(t *testing.T) {
 			assertEqual(t, testCase.Expected, eligibleForS3(testCase.Context, awsIPs))
 		})
 	}
