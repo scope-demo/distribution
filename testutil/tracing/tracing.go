@@ -20,3 +20,7 @@ func SetTestCode(t *testing.T) {
 func GetTracedTest(t *testing.T) *scopetesting.Test {
 	return scopeagent.GetTest(t)
 }
+
+
+
+

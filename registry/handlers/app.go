@@ -35,6 +35,7 @@ import (
 	storagedriver "github.com/docker/distribution/registry/storage/driver"
 	"github.com/docker/distribution/registry/storage/driver/factory"
 	storagemiddleware "github.com/docker/distribution/registry/storage/driver/middleware"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"github.com/docker/distribution/version"
 	events "github.com/docker/go-events"
 	"github.com/docker/go-metrics"
@@ -102,7 +103,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 
 	// Register the handler dispatchers.
 	app.register(v2.RouteNameBase, func(ctx *Context, r *http.Request) http.Handler {
-		return http.HandlerFunc(apiBase)
+		return tracinghttp.TracedHTTPHandler(http.HandlerFunc(apiBase))
 	})
 	app.register(v2.RouteNameManifest, manifestDispatcher)
 	app.register(v2.RouteNameCatalog, catalogDispatcher)

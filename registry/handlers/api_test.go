@@ -33,6 +33,8 @@ import (
 	"github.com/docker/distribution/registry/storage/driver/factory"
 	_ "github.com/docker/distribution/registry/storage/driver/testdriver"
 	"github.com/docker/distribution/testutil"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"github.com/docker/libtrust"
 	"github.com/gorilla/handlers"
 	"github.com/opencontainers/go-digest"
@@ -57,7 +59,7 @@ func TestCheckAPI(t *testing.T) {
 		t.Fatalf("unexpected error building base url: %v", err)
 	}
 
-	resp, err := http.Get(baseURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), baseURL)
 	if err != nil {
 		t.Fatalf("unexpected error issuing request: %v", err)
 	}
@@ -96,7 +98,7 @@ func TestCatalogAPI(t *testing.T) {
 
 	// -----------------------------------
 	// try to get an empty catalog
-	resp, err := http.Get(catalogURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), catalogURL)
 	if err != nil {
 		t.Fatalf("unexpected error issuing request: %v", err)
 	}
@@ -251,7 +253,7 @@ func TestURLPrefix(t *testing.T) {
 		t.Fatalf("Prefix %v not included in test url %v", config.HTTP.Prefix, baseURL)
 	}
 
-	resp, err := http.Get(baseURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), baseURL)
 	if err != nil {
 		t.Fatalf("unexpected error issuing request: %v", err)
 	}
@@ -401,7 +403,7 @@ func TestBlobDeleteDisabled(t *testing.T) {
 		t.Fatalf("error building url: %v", err)
 	}
 
-	resp, err := httpDelete(layerURL)
+	resp, err := httpDelete(tracing.GetContext(t), layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error deleting when disabled: %v", err)
 	}
@@ -425,7 +427,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 		t.Fatalf("error building url: %v", err)
 	}
 
-	resp, err := http.Get(layerURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error fetching non-existent layer: %v", err)
 	}
@@ -434,7 +436,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 
 	// ------------------------------------------
 	// Test head request for non-existent content
-	resp, err = http.Head(layerURL)
+	resp, err = tracinghttp.Head(tracing.GetContext(t), layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error checking head on non-existent layer: %v", err)
 	}
@@ -446,7 +448,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 	uploadURLBase, uploadUUID := startPushLayer(t, env, imageName)
 
 	// A status check should work
-	resp, err = http.Get(uploadURLBase)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), uploadURLBase)
 	if err != nil {
 		t.Fatalf("unexpected error getting upload status: %v", err)
 	}
@@ -457,7 +459,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 		"Docker-Upload-UUID": []string{uploadUUID},
 	})
 
-	req, err := http.NewRequest("DELETE", uploadURLBase, nil)
+	req, err := tracinghttp.NewRequest(tracing.GetContext(t), "DELETE", uploadURLBase, nil)
 	if err != nil {
 		t.Fatalf("unexpected error creating delete request: %v", err)
 	}
@@ -470,7 +472,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 	checkResponse(t, "deleting upload", resp, http.StatusNoContent)
 
 	// A status check should result in 404
-	resp, err = http.Get(uploadURLBase)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), uploadURLBase)
 	if err != nil {
 		t.Fatalf("unexpected error getting upload status: %v", err)
 	}
@@ -535,7 +537,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 
 	// ------------------------
 	// Use a head request to see if the layer exists.
-	resp, err = http.Head(layerURL)
+	resp, err = tracinghttp.Head(tracing.GetContext(t), layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error checking head on existing layer: %v", err)
 	}
@@ -548,7 +550,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 
 	// ----------------
 	// Fetch the layer!
-	resp, err = http.Get(layerURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error fetching layer: %v", err)
 	}
@@ -570,7 +572,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 	// ----------------
 	// Fetch the layer with an invalid digest
 	badURL := strings.Replace(layerURL, "sha256", "sha257", 1)
-	resp, err = http.Get(badURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), badURL)
 	if err != nil {
 		t.Fatalf("unexpected error fetching layer: %v", err)
 	}
@@ -578,7 +580,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 	checkResponse(t, "fetching layer bad digest", resp, http.StatusBadRequest)
 
 	// Cache headers
-	resp, err = http.Get(layerURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error fetching layer: %v", err)
 	}
@@ -593,7 +595,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 
 	// Matching etag, gives 304
 	etag := resp.Header.Get("Etag")
-	req, err = http.NewRequest("GET", layerURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", layerURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -607,7 +609,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 	checkResponse(t, "fetching layer with etag", resp, http.StatusNotModified)
 
 	// Non-matching etag, gives 200
-	req, err = http.NewRequest("GET", layerURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", layerURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -623,6 +625,7 @@ func testBlobAPI(t *testing.T, env *testEnv, args blobArgs) *testEnv {
 
 func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 	// Upload a layer
+	ctx := tracing.GetContext(t)
 	imageName := args.imageName
 	layerFile := args.layerFile
 	layerDigest := args.layerDigest
@@ -634,7 +637,7 @@ func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 	}
 	// ---------------
 	// Delete a layer
-	resp, err := httpDelete(layerURL)
+	resp, err := httpDelete(ctx, layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error deleting layer: %v", err)
 	}
@@ -647,7 +650,7 @@ func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 	// ---------------
 	// Try and get it back
 	// Use a head request to see if the layer exists.
-	resp, err = http.Head(layerURL)
+	resp, err = tracinghttp.Head(ctx, layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error checking head on existing layer: %v", err)
 	}
@@ -655,7 +658,7 @@ func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 	checkResponse(t, "checking existence of deleted layer", resp, http.StatusNotFound)
 
 	// Delete already deleted layer
-	resp, err = httpDelete(layerURL)
+	resp, err = httpDelete(ctx, layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error deleting layer: %v", err)
 	}
@@ -665,7 +668,7 @@ func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 	// ----------------
 	// Attempt to delete a layer with an invalid digest
 	badURL := strings.Replace(layerURL, "sha256", "sha257", 1)
-	resp, err = httpDelete(badURL)
+	resp, err = httpDelete(ctx, badURL)
 	if err != nil {
 		t.Fatalf("unexpected error fetching layer: %v", err)
 	}
@@ -688,7 +691,7 @@ func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 
 	// ------------------------
 	// Use a head request to see if it exists
-	resp, err = http.Head(layerURL)
+	resp, err = tracinghttp.Head(ctx, layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error checking head on existing layer: %v", err)
 	}
@@ -702,6 +705,7 @@ func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 }
 
 func TestDeleteDisabled(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	env := newTestEnv(t, false)
 	defer env.Shutdown()
 
@@ -720,7 +724,7 @@ func TestDeleteDisabled(t *testing.T) {
 	uploadURLBase, _ := startPushLayer(t, env, imageName)
 	pushLayer(t, env.builder, imageName, layerDigest, uploadURLBase, layerFile)
 
-	resp, err := httpDelete(layerURL)
+	resp, err := httpDelete(ctx, layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error deleting layer: %v", err)
 	}
@@ -749,7 +753,7 @@ func TestDeleteReadOnly(t *testing.T) {
 
 	env.app.readOnly = true
 
-	resp, err := httpDelete(layerURL)
+	resp, err := httpDelete(tracing.GetContext(t), layerURL)
 	if err != nil {
 		t.Fatalf("unexpected error deleting layer: %v", err)
 	}
@@ -769,7 +773,7 @@ func TestStartPushReadOnly(t *testing.T) {
 		t.Fatalf("unexpected error building layer upload url: %v", err)
 	}
 
-	resp, err := http.Post(layerUploadURL, "", nil)
+	resp, err := tracinghttp.Post(tracing.GetContext(t), layerUploadURL, "", nil)
 	if err != nil {
 		t.Fatalf("unexpected error starting layer push: %v", err)
 	}
@@ -778,8 +782,8 @@ func TestStartPushReadOnly(t *testing.T) {
 	checkResponse(t, "starting push in read-only mode", resp, http.StatusMethodNotAllowed)
 }
 
-func httpDelete(url string) (*http.Response, error) {
-	req, err := http.NewRequest("DELETE", url, nil)
+func httpDelete(ctx context.Context, url string) (*http.Response, error) {
+	req, err := tracinghttp.NewRequest(ctx, "DELETE", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -933,7 +937,7 @@ func testManifestDeleteDisabled(t *testing.T, env *testEnv, imageName reference.
 		t.Fatalf("unexpected error getting manifest url: %v", err)
 	}
 
-	resp, err := httpDelete(manifestURL)
+	resp, err := httpDelete(tracing.GetContext(t), manifestURL)
 	if err != nil {
 		t.Fatalf("unexpected error deleting manifest %v", err)
 	}
@@ -952,7 +956,7 @@ func testManifestWithStorageError(t *testing.T, env *testEnv, imageName referenc
 
 	// -----------------------------
 	// Attempt to fetch the manifest
-	resp, err := http.Get(manifestURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), manifestURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting manifest: %v", err)
 	}
@@ -973,7 +977,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 
 	// -----------------------------
 	// Attempt to fetch the manifest
-	resp, err := http.Get(manifestURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), manifestURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting manifest: %v", err)
 	}
@@ -987,7 +991,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 		t.Fatalf("unexpected error building tags url: %v", err)
 	}
 
-	resp, err = http.Get(tagsURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), tagsURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting unknown tags: %v", err)
 	}
@@ -1111,7 +1115,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 
 	// ------------------
 	// Fetch by tag name
-	resp, err = http.Get(manifestURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), manifestURL)
 	if err != nil {
 		t.Fatalf("unexpected error fetching manifest: %v", err)
 	}
@@ -1136,7 +1140,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 
 	// ---------------
 	// Fetch by digest
-	resp, err = http.Get(manifestDigestURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), manifestDigestURL)
 	checkErr(t, err, "fetching manifest by digest")
 	defer resp.Body.Close()
 
@@ -1183,7 +1187,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 	resp = putManifest(t, "re-putting signed manifest", manifestDigestURL, "application/json", sm2)
 	checkResponse(t, "re-putting signed manifest", resp, http.StatusCreated)
 
-	resp, err = http.Get(manifestDigestURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), manifestDigestURL)
 	checkErr(t, err, "re-fetching manifest by digest")
 	defer resp.Body.Close()
 
@@ -1210,7 +1214,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 
 	// Get by name with etag, gives 304
 	etag := resp.Header.Get("Etag")
-	req, err := http.NewRequest("GET", manifestURL, nil)
+	req, err := tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1223,7 +1227,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 	checkResponse(t, "fetching manifest by name with etag", resp, http.StatusNotModified)
 
 	// Get by digest with etag, gives 304
-	req, err = http.NewRequest("GET", manifestDigestURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestDigestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1236,7 +1240,7 @@ func testManifestAPISchema1(t *testing.T, env *testEnv, imageName reference.Name
 	checkResponse(t, "fetching manifest by dgst with etag", resp, http.StatusNotModified)
 
 	// Ensure that the tag is listed.
-	resp, err = http.Get(tagsURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), tagsURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting unknown tags: %v", err)
 	}
@@ -1294,7 +1298,7 @@ func testManifestAPISchema2(t *testing.T, env *testEnv, imageName reference.Name
 
 	// -----------------------------
 	// Attempt to fetch the manifest
-	resp, err := http.Get(manifestURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), manifestURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting manifest: %v", err)
 	}
@@ -1308,7 +1312,7 @@ func testManifestAPISchema2(t *testing.T, env *testEnv, imageName reference.Name
 		t.Fatalf("unexpected error building tags url: %v", err)
 	}
 
-	resp, err = http.Get(tagsURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), tagsURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting unknown tags: %v", err)
 	}
@@ -1452,7 +1456,7 @@ func testManifestAPISchema2(t *testing.T, env *testEnv, imageName reference.Name
 
 	// ------------------
 	// Fetch by tag name
-	req, err := http.NewRequest("GET", manifestURL, nil)
+	req, err := tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1487,7 +1491,7 @@ func testManifestAPISchema2(t *testing.T, env *testEnv, imageName reference.Name
 
 	// ---------------
 	// Fetch by digest
-	req, err = http.NewRequest("GET", manifestDigestURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestDigestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1519,7 +1523,7 @@ func testManifestAPISchema2(t *testing.T, env *testEnv, imageName reference.Name
 
 	// Get by name with etag, gives 304
 	etag := resp.Header.Get("Etag")
-	req, err = http.NewRequest("GET", manifestURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1532,7 +1536,7 @@ func testManifestAPISchema2(t *testing.T, env *testEnv, imageName reference.Name
 	checkResponse(t, "fetching manifest by name with etag", resp, http.StatusNotModified)
 
 	// Get by digest with etag, gives 304
-	req, err = http.NewRequest("GET", manifestDigestURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestDigestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1545,7 +1549,7 @@ func testManifestAPISchema2(t *testing.T, env *testEnv, imageName reference.Name
 	checkResponse(t, "fetching manifest by dgst with etag", resp, http.StatusNotModified)
 
 	// Ensure that the tag is listed.
-	resp, err = http.Get(tagsURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), tagsURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting unknown tags: %v", err)
 	}
@@ -1712,7 +1716,7 @@ func testManifestAPIManifestList(t *testing.T, env *testEnv, args manifestArgs) 
 
 	// ------------------
 	// Fetch by tag name
-	req, err := http.NewRequest("GET", manifestURL, nil)
+	req, err := tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1749,7 +1753,7 @@ func testManifestAPIManifestList(t *testing.T, env *testEnv, args manifestArgs) 
 
 	// ---------------
 	// Fetch by digest
-	req, err = http.NewRequest("GET", manifestDigestURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestDigestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1781,7 +1785,7 @@ func testManifestAPIManifestList(t *testing.T, env *testEnv, args manifestArgs) 
 
 	// Get by name with etag, gives 304
 	etag := resp.Header.Get("Etag")
-	req, err = http.NewRequest("GET", manifestURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1794,7 +1798,7 @@ func testManifestAPIManifestList(t *testing.T, env *testEnv, args manifestArgs) 
 	checkResponse(t, "fetching manifest by name with etag", resp, http.StatusNotModified)
 
 	// Get by digest with etag, gives 304
-	req, err = http.NewRequest("GET", manifestDigestURL, nil)
+	req, err = tracinghttp.NewRequest(tracing.GetContext(t), "GET", manifestDigestURL, nil)
 	if err != nil {
 		t.Fatalf("Error constructing request: %s", err)
 	}
@@ -1808,7 +1812,7 @@ func testManifestAPIManifestList(t *testing.T, env *testEnv, args manifestArgs) 
 
 	// ------------------
 	// Fetch as a schema1 manifest
-	resp, err = http.Get(manifestURL)
+	resp, err = tracinghttp.Get(tracing.GetContext(t), manifestURL)
 	if err != nil {
 		t.Fatalf("unexpected error fetching manifest list as schema1: %v", err)
 	}
@@ -1866,6 +1870,7 @@ func testManifestAPIManifestList(t *testing.T, env *testEnv, args manifestArgs) 
 }
 
 func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
+	ctx := tracing.GetContext(t)
 	imageName := args.imageName
 	dgst := args.dgst
 	manifest := args.manifest
@@ -1874,7 +1879,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 	manifestDigestURL, _ := env.builder.BuildManifestURL(ref)
 	// ---------------
 	// Delete by digest
-	resp, err := httpDelete(manifestDigestURL)
+	resp, err := httpDelete(ctx, manifestDigestURL)
 	checkErr(t, err, "deleting manifest by digest")
 
 	checkResponse(t, "deleting manifest", resp, http.StatusAccepted)
@@ -1884,7 +1889,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 
 	// ---------------
 	// Attempt to fetch deleted manifest
-	resp, err = http.Get(manifestDigestURL)
+	resp, err = tracinghttp.Get(ctx, manifestDigestURL)
 	checkErr(t, err, "fetching deleted manifest by digest")
 	defer resp.Body.Close()
 
@@ -1892,7 +1897,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 
 	// ---------------
 	// Delete already deleted manifest by digest
-	resp, err = httpDelete(manifestDigestURL)
+	resp, err = httpDelete(ctx, manifestDigestURL)
 	checkErr(t, err, "re-deleting manifest by digest")
 
 	checkResponse(t, "re-deleting manifest", resp, http.StatusNotFound)
@@ -1908,7 +1913,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 
 	// ---------------
 	// Attempt to fetch re-uploaded deleted digest
-	resp, err = http.Get(manifestDigestURL)
+	resp, err = tracinghttp.Get(ctx, manifestDigestURL)
 	checkErr(t, err, "fetching re-uploaded manifest by digest")
 	defer resp.Body.Close()
 
@@ -1924,7 +1929,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 	unknownManifestDigestURL, err := env.builder.BuildManifestURL(unknownRef)
 	checkErr(t, err, "building unknown manifest url")
 
-	resp, err = httpDelete(unknownManifestDigestURL)
+	resp, err = httpDelete(ctx, unknownManifestDigestURL)
 	checkErr(t, err, "delting unknown manifest by digest")
 	checkResponse(t, "fetching deleted manifest", resp, http.StatusNotFound)
 
@@ -1946,7 +1951,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 	}
 
 	// Ensure that the tag is listed.
-	resp, err = http.Get(tagsURL)
+	resp, err = tracinghttp.Get(ctx, tagsURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting unknown tags: %v", err)
 	}
@@ -1972,7 +1977,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 
 	// ---------------
 	// Delete by digest
-	resp, err = httpDelete(manifestDigestURL)
+	resp, err = httpDelete(ctx, manifestDigestURL)
 	checkErr(t, err, "deleting manifest by digest")
 
 	checkResponse(t, "deleting manifest with tag", resp, http.StatusAccepted)
@@ -1981,7 +1986,7 @@ func testManifestDelete(t *testing.T, env *testEnv, args manifestArgs) {
 	})
 
 	// Ensure that the tag is not listed.
-	resp, err = http.Get(tagsURL)
+	resp, err = tracinghttp.Get(ctx, tagsURL)
 	if err != nil {
 		t.Fatalf("unexpected error getting unknown tags: %v", err)
 	}
@@ -2049,10 +2054,10 @@ func newTestEnv(t *testing.T, deleteEnabled bool) *testEnv {
 }
 
 func newTestEnvWithConfig(t *testing.T, config *configuration.Configuration) *testEnv {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	app := NewApp(ctx, config)
-	server := httptest.NewServer(handlers.CombinedLoggingHandler(os.Stderr, app))
+	server := httptest.NewServer(tracinghttp.TracedHTTPHandler(handlers.CombinedLoggingHandler(os.Stderr, app)))
 	builder, err := v2.NewURLBuilderFromString(server.URL+config.HTTP.Prefix, false)
 
 	if err != nil {
@@ -2103,7 +2108,7 @@ func putManifest(t *testing.T, msg, url, contentType string, v interface{}) *htt
 		}
 	}
 
-	req, err := http.NewRequest("PUT", url, bytes.NewReader(body))
+	req, err := tracinghttp.NewRequest(tracing.GetContext(t), "PUT", url, bytes.NewReader(body))
 	if err != nil {
 		t.Fatalf("error creating request for %s: %v", msg, err)
 	}
@@ -2137,7 +2142,7 @@ func startPushLayer(t *testing.T, env *testEnv, name reference.Named) (location 
 	}
 
 	layerUploadURL = base.ResolveReference(u).String()
-	resp, err := http.Post(layerUploadURL, "", nil)
+	resp, err := tracinghttp.Post(tracing.GetContext(t), layerUploadURL, "", nil)
 	if err != nil {
 		t.Fatalf("unexpected error starting layer push: %v", err)
 	}
@@ -2177,7 +2182,7 @@ func doPushLayer(t *testing.T, ub *v2.URLBuilder, name reference.Named, dgst dig
 	uploadURL := u.String()
 
 	// Just do a monolithic upload
-	req, err := http.NewRequest("PUT", uploadURL, body)
+	req, err := tracinghttp.NewRequest(tracing.GetContext(t), "PUT", uploadURL, body)
 	if err != nil {
 		t.Fatalf("unexpected error creating new request: %v", err)
 	}
@@ -2256,7 +2261,7 @@ func doPushChunk(t *testing.T, uploadURLBase string, body io.Reader) (*http.Resp
 
 	digester := digest.Canonical.Digester()
 
-	req, err := http.NewRequest("PATCH", uploadURL, io.TeeReader(body, digester.Hash()))
+	req, err := tracinghttp.NewRequest(tracing.GetContext(t), "PATCH", uploadURL, io.TeeReader(body, digester.Hash()))
 	if err != nil {
 		t.Fatalf("unexpected error creating new request: %v", err)
 	}
@@ -2497,11 +2502,13 @@ func TestRegistryAsCacheMutationAPIs(t *testing.T) {
 		t.Fatalf("error signing manifest: %v", err)
 	}
 
+	ctx := tracing.GetContext(t)
+
 	resp := putManifest(t, "putting unsigned manifest", manifestURL, "", sm)
 	checkResponse(t, "putting signed manifest to cache", resp, errcode.ErrorCodeUnsupported.Descriptor().HTTPStatusCode)
 
 	// Manifest Delete
-	resp, _ = httpDelete(manifestURL)
+	resp, _ = httpDelete(ctx, manifestURL)
 	checkResponse(t, "deleting signed manifest from cache", resp, errcode.ErrorCodeUnsupported.Descriptor().HTTPStatusCode)
 
 	// Blob upload initialization
@@ -2510,7 +2517,7 @@ func TestRegistryAsCacheMutationAPIs(t *testing.T) {
 		t.Fatalf("unexpected error building layer upload url: %v", err)
 	}
 
-	resp, err = http.Post(layerUploadURL, "", nil)
+	resp, err = tracinghttp.Post(ctx, layerUploadURL, "", nil)
 	if err != nil {
 		t.Fatalf("unexpected error starting layer push: %v", err)
 	}
@@ -2521,7 +2528,7 @@ func TestRegistryAsCacheMutationAPIs(t *testing.T) {
 	// Blob Delete
 	ref, _ := reference.WithDigest(imageName, digestSha256EmptyTar)
 	blobURL, _ := env.builder.BuildBlobURL(ref)
-	resp, _ = httpDelete(blobURL)
+	resp, _ = httpDelete(ctx, blobURL)
 	checkResponse(t, "deleting blob from cache", resp, errcode.ErrorCodeUnsupported.Descriptor().HTTPStatusCode)
 
 }
@@ -2564,7 +2571,7 @@ func TestProxyManifestGetByTag(t *testing.T) {
 	manifestDigestURL, err := proxyEnv.builder.BuildManifestURL(digestRef)
 	checkErr(t, err, "building manifest url")
 
-	resp, err := http.Get(manifestDigestURL)
+	resp, err := tracinghttp.Get(tracing.GetContext(t), manifestDigestURL)
 	checkErr(t, err, "fetching manifest from proxy by digest")
 	defer resp.Body.Close()
 

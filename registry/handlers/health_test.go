@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -10,7 +12,6 @@ import (
 	"time"
 
 	"github.com/docker/distribution/configuration"
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/health"
 )
 
@@ -40,7 +41,7 @@ func TestFileHealthCheck(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	app := NewApp(ctx, config)
 	healthRegistry := health.NewRegistry()
@@ -104,7 +105,7 @@ func TestTCPHealthCheck(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	app := NewApp(ctx, config)
 	healthRegistry := health.NewRegistry()
@@ -136,7 +137,7 @@ func TestHTTPHealthCheck(t *testing.T) {
 
 	stopFailing := make(chan struct{})
 
-	checkedServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	checkedServer := httptest.NewServer(tracinghttp.TracedHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "HEAD" {
 			t.Fatalf("expected HEAD request, got %s", r.Method)
 		}
@@ -146,7 +147,7 @@ func TestHTTPHealthCheck(t *testing.T) {
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-	}))
+	})))
 
 	config := &configuration.Configuration{
 		Storage: configuration.Storage{
@@ -166,7 +167,7 @@ func TestHTTPHealthCheck(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	app := NewApp(ctx, config)
 	healthRegistry := health.NewRegistry()
