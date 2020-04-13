@@ -8,6 +8,9 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 )
 
 func TestWithRequest(t *testing.T) {
@@ -21,7 +24,7 @@ func TestWithRequest(t *testing.T) {
 	req.Header.Set("Referer", "foo.com/referer")
 	req.Header.Set("User-Agent", "test/0.1")
 
-	ctx := WithRequest(Background(), &req)
+	ctx := WithRequest(tracing.GetContext(t), &req)
 	for _, testcase := range []struct {
 		key      string
 		expected interface{}
@@ -194,7 +197,7 @@ func TestWithVars(t *testing.T) {
 		return vars
 	}
 
-	ctx := WithVars(Background(), &req)
+	ctx := WithVars(tracing.GetContext(t), &req)
 	for _, testcase := range []struct {
 		key      string
 		expected interface{}
@@ -253,33 +256,35 @@ func TestRemoteAddr(t *testing.T) {
 
 	// X-Forwarded-For set by proxy
 	expectedRemote = "127.0.0.1"
-	proxyReq, err := http.NewRequest("GET", frontend.URL, nil)
+	proxyReq, err := tracinghttp.NewRequest(tracing.GetContext(t), "GET", frontend.URL, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = http.DefaultClient.Do(proxyReq)
+	resp, err := http.DefaultClient.Do(proxyReq)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// RemoteAddr in X-Real-Ip
-	getReq, err := http.NewRequest("GET", backend.URL, nil)
+	getReq, err := tracinghttp.NewRequest(tracing.GetContext(t), "GET", backend.URL, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expectedRemote = "1.2.3.4"
 	getReq.Header["X-Real-ip"] = []string{expectedRemote}
-	_, err = http.DefaultClient.Do(getReq)
+	resp, err = http.DefaultClient.Do(getReq)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Valid X-Real-Ip and invalid X-Forwarded-For
 	getReq.Header["X-forwarded-for"] = []string{"1.2.3"}
-	_, err = http.DefaultClient.Do(getReq)
+	resp, err = http.DefaultClient.Do(getReq)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	defer resp.Body.Close()
 }
