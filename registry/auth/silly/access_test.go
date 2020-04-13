@@ -1,6 +1,8 @@
 package silly
 
 import (
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,13 +12,14 @@ import (
 )
 
 func TestSillyAccessController(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	ac := &accessController{
 		realm:   "test-realm",
 		service: "test-service",
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithRequest(context.Background(), r)
+	server := httptest.NewServer(tracinghttp.TracedHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithRequest(ctx, r)
 		authCtx, err := ac.Authorized(ctx)
 		if err != nil {
 			switch err := err.(type) {
@@ -39,9 +42,9 @@ func TestSillyAccessController(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
-	}))
+	})))
 
-	resp, err := http.Get(server.URL)
+	resp, err := tracinghttp.Get(ctx, server.URL)
 	if err != nil {
 		t.Fatalf("unexpected error during GET: %v", err)
 	}
@@ -52,7 +55,7 @@ func TestSillyAccessController(t *testing.T) {
 		t.Fatalf("unexpected response status: %v != %v", resp.StatusCode, http.StatusUnauthorized)
 	}
 
-	req, err := http.NewRequest("GET", server.URL, nil)
+	req, err := tracinghttp.NewRequest(ctx,"GET", server.URL, nil)
 	if err != nil {
 		t.Fatalf("unexpected error creating new request: %v", err)
 	}
