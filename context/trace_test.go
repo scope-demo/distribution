@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"runtime"
 	"testing"
 	"time"
@@ -33,7 +34,7 @@ func TestWithTrace(t *testing.T) {
 		},
 	}
 
-	ctx, done := WithTrace(Background())
+	ctx, done := WithTrace(tracing.GetContext(t))
 	defer done("this will be emitted at end of test")
 
 	checkContextForValues(ctx, t, append(base, valueTestCase{
