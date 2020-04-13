@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"github.com/gorilla/mux"
 )
 
@@ -232,9 +234,10 @@ func TestRouterWithBadCharacters(t *testing.T) {
 }
 
 func checkTestRouter(t *testing.T, testCases []routeTestCase, prefix string, deeplyEqual bool) {
+	ctx := tracing.GetContext(t)
 	router := RouterWithPrefix(prefix)
 
-	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testHandler := tracinghttp.TracedHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testCase := routeTestCase{
 			RequestURI: r.RequestURI,
 			Vars:       mux.Vars(r),
@@ -247,7 +250,7 @@ func checkTestRouter(t *testing.T, testCases []routeTestCase, prefix string, dee
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	})
+	}))
 
 	// Startup test server
 	server := httptest.NewServer(router)
@@ -264,7 +267,7 @@ func checkTestRouter(t *testing.T, testCases []routeTestCase, prefix string, dee
 
 		u := server.URL + testcase.RequestURI
 
-		resp, err := http.Get(u)
+		resp, err := tracinghttp.Get(ctx, u)
 
 		if err != nil {
 			t.Fatalf("error issuing get request: %v", err)
