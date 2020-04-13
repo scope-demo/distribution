@@ -2,6 +2,7 @@ package ocischema
 
 import (
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"reflect"
 	"testing"
 
@@ -48,6 +49,8 @@ func (bs *mockBlobService) Resume(ctx context.Context, id string) (distribution.
 }
 
 func TestBuilder(t *testing.T) {
+	ctx := tracing.GetContext(t)
+
 	imgJSON := []byte(`{
     "created": "2015-10-31T22:22:56.015925234Z",
     "author": "Alyssa P. Hacker <alyspdev@example.com>",
@@ -134,13 +137,13 @@ func TestBuilder(t *testing.T) {
 		}
 	}
 
-	built, err := builder.Build(context.Background())
+	built, err := builder.Build(ctx)
 	if err != nil {
 		t.Fatalf("Build returned error: %v", err)
 	}
 
 	// Check that the config was put in the blob store
-	_, err = bs.Stat(context.Background(), configDigest)
+	_, err = bs.Stat(ctx, configDigest)
 	if err != nil {
 		t.Fatal("config was not put in the blob store")
 	}

@@ -1,9 +1,9 @@
 package schema1
 
 import (
+	"github.com/docker/distribution/testutil/tracing"
 	"testing"
 
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/manifest"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/libtrust"
@@ -37,6 +37,8 @@ func makeSignedManifest(t *testing.T, pk libtrust.PrivateKey, refs []Reference) 
 }
 
 func TestReferenceBuilder(t *testing.T) {
+	ctx := tracing.GetContext(t)
+
 	pk, err := libtrust.GenerateECP256PrivateKey()
 	if err != nil {
 		t.Fatalf("unexpected error generating private key: %v", err)
@@ -65,7 +67,7 @@ func TestReferenceBuilder(t *testing.T) {
 	}
 
 	b := NewReferenceManifestBuilder(pk, ref, handCrafted.Manifest.Architecture)
-	_, err = b.Build(context.Background())
+	_, err = b.Build(ctx)
 	if err == nil {
 		t.Fatal("Expected error building zero length manifest")
 	}
@@ -90,7 +92,7 @@ func TestReferenceBuilder(t *testing.T) {
 		t.Fatalf("Unexpected reference : %v", refs[0])
 	}
 
-	m, err := b.Build(context.Background())
+	m, err := b.Build(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
