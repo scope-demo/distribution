@@ -344,6 +344,8 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 // implementing this properly will require a refactor. This method may panic
 // if called twice in the same process.
 func (app *App) RegisterHealthChecks(healthRegistries ...*health.Registry) {
+	ctx := context.Background()
+
 	if len(healthRegistries) > 1 {
 		panic("RegisterHealthChecks called with more than one registry")
 	}
@@ -393,7 +395,7 @@ func (app *App) RegisterHealthChecks(healthRegistries ...*health.Registry) {
 			statusCode = 200
 		}
 
-		checker := checks.HTTPChecker(httpChecker.URI, statusCode, httpChecker.Timeout, httpChecker.Headers)
+		checker := checks.HTTPChecker(ctx, httpChecker.URI, statusCode, httpChecker.Timeout, httpChecker.Headers)
 
 		if httpChecker.Threshold != 0 {
 			dcontext.GetLogger(app).Infof("configuring HTTP health check uri=%s, interval=%d, threshold=%d", httpChecker.URI, interval/time.Second, httpChecker.Threshold)

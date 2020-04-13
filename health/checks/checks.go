@@ -1,8 +1,10 @@
 package checks
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net"
 	"net/http"
 	"os"
@@ -35,12 +37,13 @@ func FileChecker(f string) health.Checker {
 
 // HTTPChecker does a HEAD request and verifies that the HTTP status code
 // returned matches statusCode.
-func HTTPChecker(r string, statusCode int, timeout time.Duration, headers http.Header) health.Checker {
+func HTTPChecker(ctx context.Context, r string, statusCode int, timeout time.Duration, headers http.Header) health.Checker {
 	return health.CheckFunc(func() error {
 		client := http.Client{
 			Timeout: timeout,
+			Transport: tracinghttp.TracedHTTPTransport(),
 		}
-		req, err := http.NewRequest("HEAD", r, nil)
+		req, err := tracinghttp.NewRequest(ctx,"HEAD", r, nil)
 		if err != nil {
 			return errors.New("error creating request: " + r)
 		}

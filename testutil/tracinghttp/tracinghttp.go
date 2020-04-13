@@ -7,6 +7,10 @@ import (
 	"net/http"
 )
 
+func TracedHTTPTransport() http.RoundTripper {
+	return &nethttp.Transport{}
+}
+
 func TracedHTTPHandler(h http.Handler) http.Handler {
 	return nethttp.Middleware(h, nethttp.MWPayloadInstrumentation())
 }

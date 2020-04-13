@@ -1,7 +1,8 @@
 package api
 
 import (
-	"net/http"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http/httptest"
 	"testing"
 
@@ -11,9 +12,10 @@ import (
 // TestGETDownHandlerDoesNotChangeStatus ensures that calling the endpoint
 // /debug/health/down with METHOD GET returns a 404
 func TestGETDownHandlerDoesNotChangeStatus(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	recorder := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "https://fakeurl.com/debug/health/down", nil)
+	req, err := tracinghttp.NewRequest(ctx, "GET", "https://fakeurl.com/debug/health/down", nil)
 	if err != nil {
 		t.Errorf("Failed to create request.")
 	}
@@ -28,9 +30,10 @@ func TestGETDownHandlerDoesNotChangeStatus(t *testing.T) {
 // TestGETUpHandlerDoesNotChangeStatus ensures that calling the endpoint
 // /debug/health/down with METHOD GET returns a 404
 func TestGETUpHandlerDoesNotChangeStatus(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	recorder := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "https://fakeurl.com/debug/health/up", nil)
+	req, err := tracinghttp.NewRequest(ctx, "GET", "https://fakeurl.com/debug/health/up", nil)
 	if err != nil {
 		t.Errorf("Failed to create request.")
 	}
@@ -46,9 +49,10 @@ func TestGETUpHandlerDoesNotChangeStatus(t *testing.T) {
 // the status code of the response to 503
 // This test is order dependent, and should come before TestPOSTUpHandlerChangeStatus
 func TestPOSTDownHandlerChangeStatus(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	recorder := httptest.NewRecorder()
 
-	req, err := http.NewRequest("POST", "https://fakeurl.com/debug/health/down", nil)
+	req, err := tracinghttp.NewRequest(ctx, "POST", "https://fakeurl.com/debug/health/down", nil)
 	if err != nil {
 		t.Errorf("Failed to create request.")
 	}
@@ -67,9 +71,10 @@ func TestPOSTDownHandlerChangeStatus(t *testing.T) {
 // TestPOSTUpHandlerChangeStatus ensures the endpoint /debug/health/up changes
 // the status code of the response to 200
 func TestPOSTUpHandlerChangeStatus(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	recorder := httptest.NewRecorder()
 
-	req, err := http.NewRequest("POST", "https://fakeurl.com/debug/health/up", nil)
+	req, err := tracinghttp.NewRequest(ctx,"POST", "https://fakeurl.com/debug/health/up", nil)
 	if err != nil {
 		t.Errorf("Failed to create request.")
 	}

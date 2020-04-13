@@ -3,6 +3,8 @@ package health
 import (
 	"errors"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,9 +13,10 @@ import (
 // TestReturns200IfThereAreNoChecks ensures that the result code of the health
 // endpoint is 200 if there are not currently registered checks.
 func TestReturns200IfThereAreNoChecks(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	recorder := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "https://fakeurl.com/debug/health", nil)
+	req, err := tracinghttp.NewRequest(ctx, "GET", "https://fakeurl.com/debug/health", nil)
 	if err != nil {
 		t.Errorf("Failed to create request.")
 	}
@@ -28,9 +31,10 @@ func TestReturns200IfThereAreNoChecks(t *testing.T) {
 // TestReturns503IfThereAreErrorChecks ensures that the result code of the
 // health endpoint is 503 if there are health checks with errors.
 func TestReturns503IfThereAreErrorChecks(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	recorder := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "https://fakeurl.com/debug/health", nil)
+	req, err := tracinghttp.NewRequest(ctx, "GET", "https://fakeurl.com/debug/health", nil)
 	if err != nil {
 		t.Errorf("Failed to create request.")
 	}
@@ -50,6 +54,7 @@ func TestReturns503IfThereAreErrorChecks(t *testing.T) {
 // TestHealthHandler ensures that our handler implementation correct protects
 // the web application when things aren't so healthy.
 func TestHealthHandler(t *testing.T) {
+
 	// clear out existing checks.
 	DefaultRegistry = NewRegistry()
 
@@ -59,7 +64,7 @@ func TestHealthHandler(t *testing.T) {
 	}))
 
 	// wrap it in our health handler
-	handler = Handler(handler)
+	handler = tracinghttp.TracedHTTPHandler(Handler(handler))
 
 	// use this swap check status
 	updater := NewStatusUpdater()
@@ -69,7 +74,8 @@ func TestHealthHandler(t *testing.T) {
 	server := httptest.NewServer(handler)
 
 	checkUp := func(t *testing.T, message string) {
-		resp, err := http.Get(server.URL)
+		ctx := tracing.GetContext(t)
+		resp, err := tracinghttp.Get(ctx, server.URL)
 		if err != nil {
 			t.Fatalf("error getting success status: %v", err)
 		}
@@ -83,7 +89,8 @@ func TestHealthHandler(t *testing.T) {
 	}
 
 	checkDown := func(t *testing.T, message string) {
-		resp, err := http.Get(server.URL)
+		ctx := tracing.GetContext(t)
+		resp, err := tracinghttp.Get(ctx, server.URL)
 		if err != nil {
 			t.Fatalf("error getting down status: %v", err)
 		}
