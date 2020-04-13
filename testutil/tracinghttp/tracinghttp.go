@@ -8,7 +8,10 @@ import (
 )
 
 func TracedHTTPTransport() http.RoundTripper {
-	return &nethttp.Transport{}
+	return &nethttp.Transport{
+		Stacktrace: true,
+		PayloadInstrumentation: true,
+	}
 }
 
 func TracedHTTPHandler(h http.Handler) http.Handler {

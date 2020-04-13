@@ -2,6 +2,8 @@ package htpasswd
 
 import (
 	"bytes"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -33,7 +35,7 @@ func TestBasicAccessController(t *testing.T) {
 		"realm": testRealm,
 		"path":  tempFile.Name(),
 	}
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	accessController, err := newAccessController(options)
 	if err != nil {
@@ -44,7 +46,7 @@ func TestBasicAccessController(t *testing.T) {
 
 	var userNumber = 0
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(tracinghttp.TracedHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithRequest(ctx, r)
 		authCtx, err := accessController.Authorized(ctx)
 		if err != nil {
@@ -68,13 +70,14 @@ func TestBasicAccessController(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
-	}))
+	})))
 
 	client := &http.Client{
 		CheckRedirect: nil,
+		Transport: tracinghttp.TracedHTTPTransport(),
 	}
 
-	req, _ := http.NewRequest("GET", server.URL, nil)
+	req, _ := tracinghttp.NewRequest(ctx,"GET", server.URL, nil)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -94,7 +97,7 @@ func TestBasicAccessController(t *testing.T) {
 
 	for i := 0; i < len(testUsers); i++ {
 		userNumber = i
-		req, err := http.NewRequest("GET", server.URL, nil)
+		req, err := tracinghttp.NewRequest(ctx,"GET", server.URL, nil)
 		if err != nil {
 			t.Fatalf("error allocating new request: %v", err)
 		}
