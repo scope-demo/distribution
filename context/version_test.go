@@ -1,9 +1,13 @@
 package context
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/docker/distribution/testutil/tracing"
+)
 
 func TestVersionContext(t *testing.T) {
-	ctx := Background()
+	ctx := tracing.GetContext(t)
 
 	if GetVersion(ctx) != "" {
 		t.Fatalf("context should not yet have a version")
