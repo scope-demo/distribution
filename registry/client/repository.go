@@ -98,7 +98,13 @@ func (r *registry) Repositories(ctx context.Context, entries []string, last stri
 		return 0, err
 	}
 
-	resp, err := r.client.Get(u)
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return 0, err
+	}
+	req = req.WithContext(ctx)
+
+	resp, err := r.client.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -214,7 +220,12 @@ func (t *tags) All(ctx context.Context) ([]string, error) {
 	}
 
 	for {
-		resp, err := t.client.Get(listURL.String())
+		req, err := http.NewRequest("GET", listURL.String(), nil)
+		if err != nil {
+			return tags, err
+		}
+		req = req.WithContext(ctx)
+		resp, err := t.client.Do(req)
 		if err != nil {
 			return tags, err
 		}
@@ -311,6 +322,7 @@ func (t *tags) Get(ctx context.Context, tag string) (distribution.Descriptor, er
 		if err != nil {
 			return nil, err
 		}
+		req = req.WithContext(ctx)
 
 		for _, t := range distribution.ManifestMediaTypes() {
 			req.Header.Add("Accept", t)
@@ -376,7 +388,12 @@ func (ms *manifests) Exists(ctx context.Context, dgst digest.Digest) (bool, erro
 		return false, err
 	}
 
-	resp, err := ms.client.Head(u)
+	req, err := http.NewRequest("HEAD", u, nil)
+	if err != nil {
+		return false, err
+	}
+	req = req.WithContext(ctx)
+	resp, err := ms.client.Do(req)
 	if err != nil {
 		return false, err
 	}
@@ -471,6 +488,7 @@ func (ms *manifests) Get(ctx context.Context, dgst digest.Digest, options ...dis
 	if err != nil {
 		return nil, err
 	}
+	req = req.WithContext(ctx)
 
 	for _, t := range mediaTypes {
 		req.Header.Add("Accept", t)
@@ -556,6 +574,7 @@ func (ms *manifests) Put(ctx context.Context, m distribution.Manifest, options .
 	if err != nil {
 		return "", err
 	}
+	putRequest = putRequest.WithContext(ctx)
 
 	putRequest.Header.Set("Content-Type", mediaType)
 
@@ -591,6 +610,7 @@ func (ms *manifests) Delete(ctx context.Context, dgst digest.Digest) error {
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 
 	resp, err := ms.client.Do(req)
 	if err != nil {
@@ -657,7 +677,7 @@ func (bs *blobs) Open(ctx context.Context, dgst digest.Digest) (distribution.Rea
 		return nil, err
 	}
 
-	return transport.NewHTTPReadSeeker(bs.client, blobURL,
+	return transport.NewHTTPReadSeeker(ctx, bs.client, blobURL,
 		func(resp *http.Response) error {
 			if resp.StatusCode == http.StatusNotFound {
 				return distribution.ErrBlobUnknown
@@ -757,7 +777,14 @@ func (bs *blobs) Create(ctx context.Context, options ...distribution.BlobCreateO
 		return nil, err
 	}
 
-	resp, err := bs.client.Post(u, "", nil)
+	req, err := http.NewRequest("POST", u, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "")
+	req = req.WithContext(ctx)
+
+	resp, err := bs.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -787,6 +814,7 @@ func (bs *blobs) Create(ctx context.Context, options ...distribution.BlobCreateO
 		}
 
 		return &httpBlobUpload{
+			ctx:       ctx,
 			statter:   bs.statter,
 			client:    bs.client,
 			uuid:      uuid,
@@ -805,6 +833,7 @@ func (bs *blobs) Resume(ctx context.Context, id string) (distribution.BlobWriter
 	}
 
 	return &httpBlobUpload{
+		ctx:       ctx,
 		statter:   bs.statter,
 		client:    bs.client,
 		uuid:      id,
@@ -833,7 +862,13 @@ func (bs *blobStatter) Stat(ctx context.Context, dgst digest.Digest) (distributi
 		return distribution.Descriptor{}, err
 	}
 
-	resp, err := bs.client.Head(u)
+	req, err := http.NewRequest("HEAD", u, nil)
+	if err != nil {
+		return distribution.Descriptor{}, err
+	}
+	req = req.WithContext(ctx)
+
+	resp, err := bs.client.Do(req)
 	if err != nil {
 		return distribution.Descriptor{}, err
 	}
@@ -889,6 +924,7 @@ func (bs *blobStatter) Clear(ctx context.Context, dgst digest.Digest) error {
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 
 	resp, err := bs.client.Do(req)
 	if err != nil {

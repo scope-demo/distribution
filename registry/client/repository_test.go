@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,7 +20,6 @@ import (
 	"time"
 
 	"github.com/docker/distribution"
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/manifest"
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/reference"
@@ -31,7 +32,7 @@ import (
 )
 
 func testServer(rrm testutil.RequestResponseMap) (string, func()) {
-	h := testutil.NewHandler(rrm)
+	h := tracinghttp.TracedHTTPHandler(testutil.NewHandler(rrm))
 	s := httptest.NewServer(h)
 	return s.URL, s.Close
 }
@@ -110,16 +111,16 @@ func TestBlobServeBlob(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	repo, _ := reference.WithName("test.example.com/repo1")
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
 	l := r.Blobs(ctx)
 
 	resp := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
 
 	err = l.ServeBlob(ctx, resp, req, dgst)
 	if err != nil {
@@ -159,16 +160,16 @@ func TestBlobServeBlobHEAD(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	repo, _ := reference.WithName("test.example.com/repo1")
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
 	l := r.Blobs(ctx)
 
 	resp := httptest.NewRecorder()
-	req := httptest.NewRequest("HEAD", "/", nil)
+	req := httptest.NewRequest("HEAD", "/", nil).WithContext(ctx)
 
 	err = l.ServeBlob(ctx, resp, req, dgst)
 	if err != nil {
@@ -252,8 +253,8 @@ func TestBlobResume(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,8 +310,8 @@ func TestBlobDelete(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -330,9 +331,9 @@ func TestBlobFetch(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	repo, _ := reference.WithName("test.example.com/repo1")
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -385,8 +386,8 @@ func TestBlobExistsNoContentLength(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -410,9 +411,9 @@ func TestBlobExists(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	repo, _ := reference.WithName("test.example.com/repo1")
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -516,8 +517,8 @@ func TestBlobUploadChunked(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -626,8 +627,8 @@ func TestBlobUploadMonolithic(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -732,8 +733,8 @@ func TestBlobUploadMonolithicDockerUploadUUIDFromURL(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -837,8 +838,8 @@ func TestBlobUploadMonolithicNoDockerUploadUUID(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -895,8 +896,8 @@ func TestBlobMount(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1092,7 +1093,7 @@ func checkEqualManifest(m1, m2 *schema1.SignedManifest) error {
 }
 
 func TestV1ManifestFetch(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	repo, _ := reference.WithName("test.example.com/repo")
 	m1, dgst, _ := newRandomSchemaV1Manifest(repo, "latest", 6)
 	var m testutil.RequestResponseMap
@@ -1107,7 +1108,7 @@ func TestV1ManifestFetch(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1178,8 +1179,8 @@ func TestManifestFetchWithEtag(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1200,17 +1201,17 @@ func TestManifestFetchWithEtag(t *testing.T) {
 }
 
 func TestManifestFetchWithAccept(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	repo, _ := reference.WithName("test.example.com/repo")
 	_, dgst, _ := newRandomSchemaV1Manifest(repo, "latest", 6)
 	headers := make(chan []string, 1)
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	s := httptest.NewServer(tracinghttp.TracedHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		headers <- req.Header["Accept"]
-	}))
+	})))
 	defer close(headers)
 	defer s.Close()
 
-	r, err := NewRepository(repo, s.URL, nil)
+	r, err := NewRepository(repo, s.URL, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1279,11 +1280,11 @@ func TestManifestDelete(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	ms, err := r.Manifests(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -1342,11 +1343,11 @@ func TestManifestPut(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	ms, err := r.Manifests(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -1395,12 +1396,12 @@ func TestManifestTags(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	tagService := r.Tags(ctx)
 
 	tags, err := tagService.All(ctx)
@@ -1451,8 +1452,8 @@ func TestObtainsErrorForMissingTag(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1482,8 +1483,8 @@ func TestObtainsManifestForTagWithoutHeaders(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	ctx := context.Background()
-	r, err := NewRepository(repo, e, nil)
+	ctx := tracing.GetContext(t)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1499,7 +1500,7 @@ func TestObtainsManifestForTagWithoutHeaders(t *testing.T) {
 	}
 }
 func TestManifestTagsPaginated(t *testing.T) {
-	s := httptest.NewServer(http.NotFoundHandler())
+	s := httptest.NewServer(tracinghttp.TracedHTTPHandler(http.NotFoundHandler()))
 	defer s.Close()
 
 	repo, _ := reference.WithName("test.example.com/repo/tags/list")
@@ -1555,12 +1556,12 @@ func TestManifestTagsPaginated(t *testing.T) {
 
 	s.Config.Handler = testutil.NewHandler(m)
 
-	r, err := NewRepository(repo, s.URL, nil)
+	r, err := NewRepository(repo, s.URL, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	tagService := r.Tags(ctx)
 
 	tags, err := tagService.All(ctx)
@@ -1603,11 +1604,11 @@ func TestManifestUnauthorized(t *testing.T) {
 	e, c := testServer(m)
 	defer c()
 
-	r, err := NewRepository(repo, e, nil)
+	r, err := NewRepository(repo, e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	ms, err := r.Manifests(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -1640,12 +1641,12 @@ func TestCatalog(t *testing.T) {
 
 	entries := make([]string, 5)
 
-	r, err := NewRegistry(e, nil)
+	r, err := NewRegistry(e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	numFilled, err := r.Repositories(ctx, entries, "")
 	if err != io.EOF {
 		t.Fatal(err)
@@ -1672,12 +1673,12 @@ func TestCatalogInParts(t *testing.T) {
 
 	entries := make([]string, 2)
 
-	r, err := NewRegistry(e, nil)
+	r, err := NewRegistry(e, tracinghttp.TracedHTTPTransport())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	numFilled, err := r.Repositories(ctx, entries, "")
 	if err != nil {
 		t.Fatal(err)

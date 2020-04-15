@@ -13,6 +13,7 @@ import (
 )
 
 type httpBlobUpload struct {
+	ctx     context.Context
 	statter distribution.BlobStatter
 	client  *http.Client
 
@@ -36,7 +37,13 @@ func (hbu *httpBlobUpload) handleErrorResponse(resp *http.Response) error {
 }
 
 func (hbu *httpBlobUpload) ReadFrom(r io.Reader) (n int64, err error) {
+	if hbu.ctx == nil {
+		hbu.ctx = context.TODO()
+	}
+
 	req, err := http.NewRequest("PATCH", hbu.location, ioutil.NopCloser(r))
+	req = req.WithContext(hbu.ctx)
+
 	if err != nil {
 		return 0, err
 	}
@@ -46,6 +53,7 @@ func (hbu *httpBlobUpload) ReadFrom(r io.Reader) (n int64, err error) {
 	if err != nil {
 		return 0, err
 	}
+	defer resp.Body.Close()
 
 	if !SuccessStatus(resp.StatusCode) {
 		return 0, hbu.handleErrorResponse(resp)
@@ -69,7 +77,13 @@ func (hbu *httpBlobUpload) ReadFrom(r io.Reader) (n int64, err error) {
 }
 
 func (hbu *httpBlobUpload) Write(p []byte) (n int, err error) {
+	if hbu.ctx == nil {
+		hbu.ctx = context.TODO()
+	}
+
 	req, err := http.NewRequest("PATCH", hbu.location, bytes.NewReader(p))
+	req = req.WithContext(hbu.ctx)
+
 	if err != nil {
 		return 0, err
 	}
@@ -81,6 +95,7 @@ func (hbu *httpBlobUpload) Write(p []byte) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
+	defer resp.Body.Close()
 
 	if !SuccessStatus(resp.StatusCode) {
 		return 0, hbu.handleErrorResponse(resp)
@@ -118,6 +133,7 @@ func (hbu *httpBlobUpload) StartedAt() time.Time {
 func (hbu *httpBlobUpload) Commit(ctx context.Context, desc distribution.Descriptor) (distribution.Descriptor, error) {
 	// TODO(dmcgowan): Check if already finished, if so just fetch
 	req, err := http.NewRequest("PUT", hbu.location, nil)
+	req = req.WithContext(ctx)
 	if err != nil {
 		return distribution.Descriptor{}, err
 	}
@@ -144,6 +160,7 @@ func (hbu *httpBlobUpload) Cancel(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 	resp, err := hbu.client.Do(req)
 	if err != nil {
 		return err

@@ -3,6 +3,8 @@ package client
 import (
 	"bytes"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http"
 	"testing"
 
@@ -16,6 +18,8 @@ import (
 var _ distribution.BlobWriter = &httpBlobUpload{}
 
 func TestUploadReadFrom(t *testing.T) {
+	ctx := tracing.GetContext(t)
+
 	_, b := newRandomBlob(64)
 	repo := "test/upload/readfrom"
 	locationPath := fmt.Sprintf("/v2/%s/uploads/testid", repo)
@@ -126,7 +130,8 @@ func TestUploadReadFrom(t *testing.T) {
 	defer c()
 
 	blobUpload := &httpBlobUpload{
-		client: &http.Client{},
+		ctx:    ctx,
+		client: &http.Client{Transport: tracinghttp.TracedHTTPTransport()},
 	}
 
 	// Valid case
@@ -211,6 +216,7 @@ func TestUploadReadFrom(t *testing.T) {
 }
 
 func TestUploadSize(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	_, b := newRandomBlob(64)
 	readFromLocationPath := "/v2/test/upload/readfrom/uploads/testid"
 	writeLocationPath := "/v2/test/upload/readfrom/uploads/testid"
@@ -265,7 +271,8 @@ func TestUploadSize(t *testing.T) {
 
 	// Writing with ReadFrom
 	blobUpload := &httpBlobUpload{
-		client:   &http.Client{},
+		ctx:      ctx,
+		client:   &http.Client{Transport: tracinghttp.TracedHTTPTransport()},
 		location: e + readFromLocationPath,
 	}
 
@@ -284,7 +291,8 @@ func TestUploadSize(t *testing.T) {
 
 	// Writing with Write
 	blobUpload = &httpBlobUpload{
-		client:   &http.Client{},
+		ctx:      ctx,
+		client:   &http.Client{Transport: tracinghttp.TracedHTTPTransport()},
 		location: e + writeLocationPath,
 	}
 
@@ -299,6 +307,8 @@ func TestUploadSize(t *testing.T) {
 }
 
 func TestUploadWrite(t *testing.T) {
+	ctx := tracing.GetContext(t)
+
 	_, b := newRandomBlob(64)
 	repo := "test/upload/write"
 	locationPath := fmt.Sprintf("/v2/%s/uploads/testid", repo)
@@ -409,7 +419,8 @@ func TestUploadWrite(t *testing.T) {
 	defer c()
 
 	blobUpload := &httpBlobUpload{
-		client: &http.Client{},
+		ctx:    ctx,
+		client: &http.Client{Transport: tracinghttp.TracedHTTPTransport()},
 	}
 
 	// Valid case

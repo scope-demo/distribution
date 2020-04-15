@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,8 +29,13 @@ type ReadSeekCloser interface {
 // request. When seeking and starting a read from a non-zero offset
 // the a "Range" header will be added which sets the offset.
 // TODO(dmcgowan): Move this into a separate utility package
-func NewHTTPReadSeeker(client *http.Client, url string, errorHandler func(*http.Response) error) ReadSeekCloser {
+func NewHTTPReadSeeker(ctx context.Context, client *http.Client, url string, errorHandler func(*http.Response) error) ReadSeekCloser {
+	if ctx == nil {
+		ctx = context.TODO()
+	}
+
 	return &httpReadSeeker{
+		ctx:          ctx,
 		client:       client,
 		url:          url,
 		errorHandler: errorHandler,
@@ -37,6 +43,7 @@ func NewHTTPReadSeeker(client *http.Client, url string, errorHandler func(*http.
 }
 
 type httpReadSeeker struct {
+	ctx    context.Context
 	client *http.Client
 	url    string
 
@@ -172,6 +179,7 @@ func (hrs *httpReadSeeker) reader() (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+	req = req.WithContext(hrs.ctx)
 
 	if hrs.readerOffset > 0 {
 		// If we are at different offset, issue a range request from there.
