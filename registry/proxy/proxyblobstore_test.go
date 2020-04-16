@@ -2,6 +2,8 @@ package proxy
 
 import (
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -120,7 +122,7 @@ func makeTestEnv(t *testing.T, name string) *testEnv {
 		t.Fatalf("unable to parse reference: %s", err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	truthDir, err := ioutil.TempDir("", "truth")
 	if err != nil {
@@ -326,6 +328,7 @@ func TestProxyStoreServeBig(t *testing.T) {
 // testProxyStoreServe will create clients to consume all blobs
 // populated in the truth store
 func testProxyStoreServe(t *testing.T, te *testEnv, numClients int) {
+	ctx := tracing.GetContext(t)
 	localStats := te.LocalStats()
 	remoteStats := te.RemoteStats()
 
@@ -338,7 +341,8 @@ func testProxyStoreServe(t *testing.T, te *testEnv, numClients int) {
 			defer wg.Done()
 			for _, remoteBlob := range te.inRemote {
 				w := httptest.NewRecorder()
-				r, err := http.NewRequest("GET", "", nil)
+				r, err := tracinghttp.NewRequest(ctx, "GET", "", nil)
+
 				if err != nil {
 					t.Error(err)
 					return

@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"reflect"
 	"sort"
 	"sync"
@@ -81,7 +82,7 @@ func TestGet(t *testing.T) {
 	remoteTag := "remote"
 	proxyTags := testProxyTagService(map[string]distribution.Descriptor{remoteTag: remoteDesc}, nil)
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	// Get pre-loaded tag
 	d, err := proxyTags.Get(ctx, remoteTag)
