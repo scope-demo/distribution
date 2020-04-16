@@ -8,6 +8,7 @@ require (
 	github.com/Azure/go-autorest v10.8.1+incompatible // indirect
 	github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d
 	github.com/aws/aws-sdk-go v1.15.11
+	github.com/beevik/ntp v0.3.0 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bshuster-repo/logrus-logstash-hook v0.4.1
@@ -21,7 +22,8 @@ require (
 	github.com/docker/go-metrics v0.0.1
 	github.com/docker/libtrust v0.0.0-20150114040149-fa567046d9b1
 	github.com/garyburd/redigo v0.0.0-20150301180006-535138d7bcd7
-	github.com/golang/protobuf v1.3.4 // indirect
+	github.com/go-errors/errors v1.0.2 // indirect
+	github.com/golang/protobuf v1.4.0 // indirect
 	github.com/gorilla/handlers v0.0.0-20150720190736-60c7bfde3e33
 	github.com/gorilla/mux v1.7.2
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -30,8 +32,6 @@ require (
 	github.com/marstr/guid v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/mitchellh/osext v0.0.0-20151018003038-5e2d6d41470f // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/ncw/swift v1.0.47
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1
@@ -45,10 +45,11 @@ require (
 	github.com/yvasiyarov/go-metrics v0.0.0-20140926110328-57bccd1ccd43 // indirect
 	github.com/yvasiyarov/gorelic v0.0.0-20141212073537-a9bba5b9ab50
 	github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f // indirect
-	go.undefinedlabs.com/scopeagent v0.1.16-0.20200407085120-9d2f515cb15a
+	go.undefinedlabs.com/scopeagent v0.2.1
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
+	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
 	google.golang.org/api v0.19.0
 	google.golang.org/cloud v0.0.0-20151119220103-975617b05ea8
 	google.golang.org/genproto v0.0.0-20200227132054-3f1135a288c9 // indirect
