@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracing"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -38,18 +39,18 @@ func TestNextProtos(t *testing.T) {
 	}
 }
 
-func setupRegistry() (*Registry, error) {
+func setupRegistry(ctx context.Context) (*Registry, error) {
 	config := &configuration.Configuration{}
 	// TODO: this needs to change to something ephemeral as the test will fail if there is any server
 	// already listening on port 5000
 	config.HTTP.Addr = ":5000"
 	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
 	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]interface{}{}}
-	return NewRegistry(context.Background(), config)
+	return NewRegistry(ctx, config)
 }
 
 func TestGracefulShutdown(t *testing.T) {
-	registry, err := setupRegistry()
+	registry, err := setupRegistry(tracing.GetContext(t))
 	if err != nil {
 		t.Fatal(err)
 	}

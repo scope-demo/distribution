@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracing"
 	"io"
 	"reflect"
 	"sort"
@@ -18,7 +19,7 @@ import (
 func TestLinkedBlobStoreEnumerator(t *testing.T) {
 	fooRepoName, _ := reference.WithName("nm/foo")
 	fooEnv := newManifestStoreTestEnv(t, fooRepoName, "thetag")
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	var expected []string
 	for i := 0; i < 2; i++ {
@@ -66,7 +67,7 @@ func TestLinkedBlobStoreEnumerator(t *testing.T) {
 func TestLinkedBlobStoreCreateWithMountFrom(t *testing.T) {
 	fooRepoName, _ := reference.WithName("nm/foo")
 	fooEnv := newManifestStoreTestEnv(t, fooRepoName, "thetag")
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	stats, err := mockRegistry(t, fooEnv.registry)
 	if err != nil {
 		t.Fatal(err)

@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"io"
 	"reflect"
 	"testing"
@@ -32,7 +33,7 @@ type manifestStoreTestEnv struct {
 }
 
 func newManifestStoreTestEnv(t *testing.T, name reference.Named, tag string, options ...RegistryOption) *manifestStoreTestEnv {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, options...)
 	if err != nil {
@@ -73,7 +74,7 @@ func TestManifestStorageV1Unsupported(t *testing.T) {
 func testManifestStorage(t *testing.T, schema1Enabled bool, options ...RegistryOption) {
 	repoName, _ := reference.WithName("foo/bar")
 	env := newManifestStoreTestEnv(t, repoName, "thetag", options...)
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	ms, err := env.repository.Manifests(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -396,7 +397,7 @@ func testOCIManifestStorage(t *testing.T, testname string, includeMediaTypes boo
 		BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()),
 		EnableDelete, EnableRedirect)
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	ms, err := env.repository.Manifests(ctx)
 	if err != nil {
 		t.Fatal(err)

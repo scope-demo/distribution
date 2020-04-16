@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"regexp"
 	"testing"
 
@@ -13,7 +13,7 @@ import (
 )
 
 func TestVerifyOCIManifestNonDistributableLayer(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	inmemoryDriver := inmemory.New()
 	registry := createRegistry(t, inmemoryDriver,
 		ManifestURLsAllowRegexp(regexp.MustCompile("^https?://foo")),

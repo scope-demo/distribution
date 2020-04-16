@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"github.com/docker/distribution/testutil/tracing"
 	"io"
 	mrand "math/rand"
 	"testing"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestSimpleRead(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	content := make([]byte, 1<<20)
 	n, err := mrand.Read(content)
 	if err != nil {
@@ -54,7 +55,7 @@ func TestFileReaderSeek(t *testing.T) {
 	repititions := 1024
 	path := "/patterned"
 	content := bytes.Repeat([]byte(pattern), repititions)
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 
 	if err := driver.PutContent(ctx, path, content); err != nil {
 		t.Fatalf("error putting patterned content: %v", err)

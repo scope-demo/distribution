@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracing"
 	"io"
 	"io/ioutil"
 	"path"
@@ -22,7 +23,7 @@ import (
 // TestWriteSeek tests that the current file size can be
 // obtained using Seek
 func TestWriteSeek(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	imageName, _ := reference.WithName("foo/bar")
 	driver := testdriver.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
@@ -58,7 +59,7 @@ func TestSimpleBlobUpload(t *testing.T) {
 		t.Fatalf("error creating random reader: %v", err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	imageName, _ := reference.WithName("foo/bar")
 	driver := testdriver.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
@@ -253,7 +254,7 @@ func TestSimpleBlobUpload(t *testing.T) {
 // open, read, seek, read works. More specific edge cases should be covered in
 // other tests.
 func TestSimpleBlobRead(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	imageName, _ := reference.WithName("foo/bar")
 	driver := testdriver.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
@@ -364,7 +365,7 @@ func TestBlobMount(t *testing.T) {
 		t.Fatalf("error creating random reader: %v", err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	imageName, _ := reference.WithName("foo/bar")
 	sourceImageName, _ := reference.WithName("foo/source")
 	driver := testdriver.New()
@@ -516,7 +517,7 @@ func TestBlobMount(t *testing.T) {
 
 // TestLayerUploadZeroLength uploads zero-length
 func TestLayerUploadZeroLength(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	imageName, _ := reference.WithName("foo/bar")
 	driver := testdriver.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
@@ -533,7 +534,7 @@ func TestLayerUploadZeroLength(t *testing.T) {
 }
 
 func simpleUpload(t *testing.T, bs distribution.BlobIngester, blob []byte, expectedDigest digest.Digest) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	wr, err := bs.Create(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error starting upload: %v", err)
