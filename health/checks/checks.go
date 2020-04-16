@@ -40,10 +40,10 @@ func FileChecker(f string) health.Checker {
 func HTTPChecker(ctx context.Context, r string, statusCode int, timeout time.Duration, headers http.Header) health.Checker {
 	return health.CheckFunc(func() error {
 		client := http.Client{
-			Timeout: timeout,
+			Timeout:   timeout,
 			Transport: tracinghttp.TracedHTTPTransport(),
 		}
-		req, err := tracinghttp.NewRequest(ctx,"HEAD", r, nil)
+		req, err := tracinghttp.NewRequest(ctx, "HEAD", r, nil)
 		if err != nil {
 			return errors.New("error creating request: " + r)
 		}
@@ -56,6 +56,8 @@ func HTTPChecker(ctx context.Context, r string, statusCode int, timeout time.Dur
 		if err != nil {
 			return errors.New("error while checking: " + r)
 		}
+		defer response.Body.Close()
+
 		if response.StatusCode != statusCode {
 			return errors.New("downstream service returned unexpected status: " + strconv.Itoa(response.StatusCode))
 		}

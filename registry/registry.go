@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -116,6 +117,7 @@ func NewRegistry(ctx context.Context, config *configuration.Configuration) (*Reg
 		handler = gorhandlers.CombinedLoggingHandler(os.Stdout, handler)
 	}
 
+	handler = tracinghttp.TracedHTTPHandler(handler)
 	server := &http.Server{
 		Handler: handler,
 	}

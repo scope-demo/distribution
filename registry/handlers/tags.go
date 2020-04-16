@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http"
 
 	"github.com/docker/distribution"
@@ -17,7 +18,7 @@ func tagsDispatcher(ctx *Context, r *http.Request) http.Handler {
 	}
 
 	return handlers.MethodHandler{
-		"GET": http.HandlerFunc(tagsHandler.GetTags),
+		"GET": tracinghttp.TracedHTTPHandlerFunc(tagsHandler.GetTags),
 	}
 }
 
