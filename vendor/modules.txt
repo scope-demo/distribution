@@ -173,7 +173,7 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# go.undefinedlabs.com/scopeagent v0.2.1-0.20200416160529-c6e8d0c4b5b3
+# go.undefinedlabs.com/scopeagent v0.2.1-0.20200421074936-b5818f316692
 go.undefinedlabs.com/scopeagent
 go.undefinedlabs.com/scopeagent/agent
 go.undefinedlabs.com/scopeagent/ast
@@ -195,7 +195,7 @@ golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
-# golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+# golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
 golang.org/x/net/bpf
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -214,7 +214,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200413165638-669c56c373c4
+# golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.2
