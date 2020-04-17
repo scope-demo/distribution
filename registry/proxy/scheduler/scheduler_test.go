@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"encoding/json"
+	"github.com/docker/distribution/testutil/tracing"
 	"sync"
 	"testing"
 	"time"
@@ -31,6 +32,7 @@ func testRefs(t *testing.T) (reference.Reference, reference.Reference, reference
 }
 
 func TestSchedule(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	ref1, ref2, ref3 := testRefs(t)
 	timeUnit := time.Millisecond
 	remainingRepos := map[string]bool{
@@ -40,7 +42,7 @@ func TestSchedule(t *testing.T) {
 	}
 
 	var mu sync.Mutex
-	s := New(context.Background(), inmemory.New(), "/ttl")
+	s := New(ctx, inmemory.New(), "/ttl")
 	deleteFunc := func(repoName reference.Reference) error {
 		if len(remainingRepos) == 0 {
 			t.Fatalf("Incorrect expiry count")
@@ -124,14 +126,14 @@ func TestRestoreOld(t *testing.T) {
 		t.Fatalf("Error serializing test data: %s", err.Error())
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	pathToStatFile := "/ttl"
 	fs := inmemory.New()
 	err = fs.PutContent(ctx, pathToStatFile, serialized)
 	if err != nil {
 		t.Fatal("Unable to write serialized data to fs")
 	}
-	s := New(context.Background(), fs, "/ttl")
+	s := New(tracing.GetContext(t), fs, "/ttl")
 	s.OnBlobExpire(deleteFunc)
 	err = s.Start()
 	if err != nil {
@@ -148,6 +150,7 @@ func TestRestoreOld(t *testing.T) {
 }
 
 func TestStopRestore(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	ref1, ref2, _ := testRefs(t)
 
 	timeUnit := time.Millisecond
@@ -166,7 +169,7 @@ func TestStopRestore(t *testing.T) {
 
 	fs := inmemory.New()
 	pathToStateFile := "/ttl"
-	s := New(context.Background(), fs, pathToStateFile)
+	s := New(ctx, fs, pathToStateFile)
 	s.onBlobExpire = deleteFunc
 
 	err := s.Start()
@@ -199,7 +202,8 @@ func TestStopRestore(t *testing.T) {
 }
 
 func TestDoubleStart(t *testing.T) {
-	s := New(context.Background(), inmemory.New(), "/ttl")
+	ctx := tracing.GetContext(t)
+	s := New(ctx, inmemory.New(), "/ttl")
 	err := s.Start()
 	if err != nil {
 		t.Fatalf("Unable to start scheduler")

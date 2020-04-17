@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"reflect"
 	"testing"
 
@@ -22,7 +23,7 @@ type tagsTestEnv struct {
 }
 
 func testTagStore(t *testing.T) *tagsTestEnv {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	d := inmemory.New()
 	reg, err := NewRegistry(ctx, d)
 	if err != nil {

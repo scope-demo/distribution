@@ -344,7 +344,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 // implementing this properly will require a refactor. This method may panic
 // if called twice in the same process.
 func (app *App) RegisterHealthChecks(healthRegistries ...*health.Registry) {
-	ctx := context.Background()
+	ctx := app
 
 	if len(healthRegistries) > 1 {
 		panic("RegisterHealthChecks called with more than one registry")

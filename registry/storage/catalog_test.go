@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracing"
 	"io"
 	"math/rand"
 	"testing"
@@ -25,7 +26,7 @@ type setupEnv struct {
 
 func setupFS(t *testing.T) *setupEnv {
 	d := inmemory.New()
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	registry, err := NewRegistry(ctx, d, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableRedirect, EnableSchema1)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)

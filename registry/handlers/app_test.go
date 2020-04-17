@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/docker/distribution/testutil/tracing"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/docker/distribution/configuration"
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/api/errcode"
 	v2 "github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/auth"
@@ -25,7 +26,7 @@ import (
 // tested individually.
 func TestAppDispatcher(t *testing.T) {
 	driver := testdriver.New()
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	registry, err := storage.NewRegistry(ctx, driver, storage.BlobDescriptorCacheProvider(memorycache.NewInMemoryBlobDescriptorCacheProvider()), storage.EnableDelete, storage.EnableRedirect)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
@@ -37,7 +38,7 @@ func TestAppDispatcher(t *testing.T) {
 		driver:   driver,
 		registry: registry,
 	}
-	server := httptest.NewServer(app)
+	server := httptest.NewServer(tracinghttp.TracedHTTPHandler(app))
 	defer server.Close()
 	router := v2.Router()
 
@@ -70,9 +71,9 @@ func TestAppDispatcher(t *testing.T) {
 				}
 			}
 
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			return tracinghttp.TracedHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-			})
+			}))
 		}
 	}
 
@@ -125,7 +126,7 @@ func TestAppDispatcher(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		resp, err := http.Get(u.String())
+		resp, err := tracinghttp.Get(ctx, u.String())
 
 		if err != nil {
 			t.Fatal(err)
@@ -134,13 +135,15 @@ func TestAppDispatcher(t *testing.T) {
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("unexpected status code: %v != %v", resp.StatusCode, http.StatusOK)
 		}
+
+		resp.Body.Close()
 	}
 }
 
 // TestNewApp covers the creation of an application via NewApp with a
 // configuration.
 func TestNewApp(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	config := configuration.Configuration{
 		Storage: configuration.Storage{
 			"testdriver": nil,
@@ -161,7 +164,7 @@ func TestNewApp(t *testing.T) {
 	// Mostly, with this test, given a sane configuration, we are simply
 	// ensuring that NewApp doesn't panic. We might want to tweak this
 	// behavior.
-	app := NewApp(ctx, &config)
+	app := tracinghttp.TracedHTTPHandler(NewApp(ctx, &config))
 
 	server := httptest.NewServer(app)
 	defer server.Close()
@@ -178,7 +181,7 @@ func TestNewApp(t *testing.T) {
 	// TODO(stevvooe): The rest of this test might belong in the API tests.
 
 	// Just hit the app and make sure we get a 401 Unauthorized error.
-	req, err := http.Get(baseURL)
+	req, err := tracinghttp.Get(ctx, baseURL)
 	if err != nil {
 		t.Fatalf("unexpected error during GET: %v", err)
 	}

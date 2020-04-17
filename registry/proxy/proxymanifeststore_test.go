@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"io"
 	"sync"
 	"testing"
@@ -92,7 +93,7 @@ func newManifestStoreTestEnv(t *testing.T, name, tag string) *manifestStoreTestE
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	truthRegistry, err := storage.NewRegistry(ctx, inmemory.New(),
 		storage.BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()),
 		storage.Schema1SigningKey(k),
