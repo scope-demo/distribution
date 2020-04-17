@@ -182,6 +182,7 @@ go.undefinedlabs.com/scopeagent/env
 go.undefinedlabs.com/scopeagent/errors
 go.undefinedlabs.com/scopeagent/instrumentation
 go.undefinedlabs.com/scopeagent/instrumentation/logging
+go.undefinedlabs.com/scopeagent/instrumentation/logrus
 go.undefinedlabs.com/scopeagent/instrumentation/nethttp
 go.undefinedlabs.com/scopeagent/instrumentation/testing
 go.undefinedlabs.com/scopeagent/reflection
