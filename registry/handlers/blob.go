@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http"
 
 	"github.com/docker/distribution"
@@ -18,12 +17,12 @@ func blobDispatcher(ctx *Context, r *http.Request) http.Handler {
 	if err != nil {
 
 		if err == errDigestNotAvailable {
-			return tracinghttp.TracedHTTPHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				ctx.Errors = append(ctx.Errors, v2.ErrorCodeDigestInvalid.WithDetail(err))
 			})
 		}
 
-		return tracinghttp.TracedHTTPHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx.Errors = append(ctx.Errors, v2.ErrorCodeDigestInvalid.WithDetail(err))
 		})
 	}
@@ -34,12 +33,12 @@ func blobDispatcher(ctx *Context, r *http.Request) http.Handler {
 	}
 
 	mhandler := handlers.MethodHandler{
-		"GET":  tracinghttp.TracedHTTPHandlerFunc(blobHandler.GetBlob),
-		"HEAD": tracinghttp.TracedHTTPHandlerFunc(blobHandler.GetBlob),
+		"GET":  http.HandlerFunc(blobHandler.GetBlob),
+		"HEAD": http.HandlerFunc(blobHandler.GetBlob),
 	}
 
 	if !ctx.readOnly {
-		mhandler["DELETE"] = tracinghttp.TracedHTTPHandlerFunc(blobHandler.DeleteBlob)
+		mhandler["DELETE"] = http.HandlerFunc(blobHandler.DeleteBlob)
 	}
 
 	return mhandler

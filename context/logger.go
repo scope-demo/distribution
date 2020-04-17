@@ -3,11 +3,9 @@ package context
 import (
 	"context"
 	"fmt"
-	"go.undefinedlabs.com/scopeagent/env"
 	"runtime"
 
 	"github.com/sirupsen/logrus"
-	scopelogrus "go.undefinedlabs.com/scopeagent/instrumentation/logrus"
 )
 
 // Logger provides a leveled-logging interface.
@@ -108,11 +106,7 @@ func getLogrusLogger(ctx context.Context, keys ...interface{}) *logrus.Entry {
 
 		fields["go.version"] = runtime.Version()
 		// If no logger is found, just return the standard logger.
-		stdLogger := logrus.StandardLogger()
-		if env.ScopeDsn.Value != "" {
-			stdLogger.AddHook(&scopelogrus.ScopeHook{})
-		}
-		logger = stdLogger.WithFields(fields)
+		logger = logrus.StandardLogger().WithContext(ctx).WithFields(fields)
 	}
 
 	fields := logrus.Fields{}

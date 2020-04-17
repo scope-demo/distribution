@@ -35,7 +35,6 @@ import (
 	storagedriver "github.com/docker/distribution/registry/storage/driver"
 	"github.com/docker/distribution/registry/storage/driver/factory"
 	storagemiddleware "github.com/docker/distribution/registry/storage/driver/middleware"
-	"github.com/docker/distribution/testutil/tracinghttp"
 	"github.com/docker/distribution/version"
 	events "github.com/docker/go-events"
 	"github.com/docker/go-metrics"
@@ -43,6 +42,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"go.undefinedlabs.com/scopeagent/env"
+	scopelogrus "go.undefinedlabs.com/scopeagent/instrumentation/logrus"
 )
 
 // randomSecretSize is the number of random bytes to generate if no secret
@@ -103,7 +104,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 
 	// Register the handler dispatchers.
 	app.register(v2.RouteNameBase, func(ctx *Context, r *http.Request) http.Handler {
-		return tracinghttp.TracedHTTPHandler(http.HandlerFunc(apiBase))
+		return http.HandlerFunc(apiBase)
 	})
 	app.register(v2.RouteNameManifest, manifestDispatcher)
 	app.register(v2.RouteNameCatalog, catalogDispatcher)
@@ -157,10 +158,10 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 		panic(err)
 	}
 
+	app.configureLogHook(config)
 	app.configureSecret(config)
 	app.configureEvents(config)
 	app.configureRedis(config)
-	app.configureLogHook(config)
 
 	options := registrymiddleware.GetRegistryOptions()
 	if config.Compatibility.Schema1.TrustKey != "" {
@@ -587,6 +588,10 @@ func (app *App) configureLogHook(configuration *configuration.Configuration) {
 	}
 
 	logger := entry.Logger
+
+	if env.ScopeDsn.Value != "" {
+		logger.Hooks.Add(&scopelogrus.ScopeHook{})
+	}
 
 	for _, configHook := range configuration.Log.Hooks {
 		if !configHook.Disabled {

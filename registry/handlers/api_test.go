@@ -2068,7 +2068,7 @@ func newTestEnvWithConfig(t *testing.T, config *configuration.Configuration) *te
 	ctx := tracing.GetContext(t)
 
 	app := NewApp(ctx, config)
-	server := httptest.NewServer(handlers.CombinedLoggingHandler(os.Stderr, app))
+	server := httptest.NewServer(handlers.CombinedLoggingHandler(os.Stderr, tracinghttp.TracedHTTPHandler(app)))
 	builder, err := v2.NewURLBuilderFromString(server.URL+config.HTTP.Prefix, false)
 
 	if err != nil {
