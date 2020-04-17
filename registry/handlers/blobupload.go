@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"net/http"
 	"net/url"
 
@@ -24,15 +25,15 @@ func blobUploadDispatcher(ctx *Context, r *http.Request) http.Handler {
 	}
 
 	handler := handlers.MethodHandler{
-		"GET":  http.HandlerFunc(buh.GetUploadStatus),
-		"HEAD": http.HandlerFunc(buh.GetUploadStatus),
+		"GET":  tracinghttp.TracedHTTPHandlerFunc(buh.GetUploadStatus),
+		"HEAD": tracinghttp.TracedHTTPHandlerFunc(buh.GetUploadStatus),
 	}
 
 	if !ctx.readOnly {
-		handler["POST"] = http.HandlerFunc(buh.StartBlobUpload)
-		handler["PATCH"] = http.HandlerFunc(buh.PatchBlobData)
-		handler["PUT"] = http.HandlerFunc(buh.PutBlobUploadComplete)
-		handler["DELETE"] = http.HandlerFunc(buh.CancelBlobUpload)
+		handler["POST"] = tracinghttp.TracedHTTPHandlerFunc(buh.StartBlobUpload)
+		handler["PATCH"] = tracinghttp.TracedHTTPHandlerFunc(buh.PatchBlobData)
+		handler["PUT"] = tracinghttp.TracedHTTPHandlerFunc(buh.PutBlobUploadComplete)
+		handler["DELETE"] = tracinghttp.TracedHTTPHandlerFunc(buh.CancelBlobUpload)
 	}
 
 	if buh.UUID != "" {

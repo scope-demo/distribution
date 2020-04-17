@@ -1,18 +1,18 @@
 package storage
 
 import (
+	"github.com/docker/distribution/testutil/tracing"
 	"regexp"
 	"testing"
 
 	"github.com/docker/distribution"
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/manifest"
 	"github.com/docker/distribution/manifest/schema2"
 	"github.com/docker/distribution/registry/storage/driver/inmemory"
 )
 
 func TestVerifyManifestForeignLayer(t *testing.T) {
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	inmemoryDriver := inmemory.New()
 	registry := createRegistry(t, inmemoryDriver,
 		ManifestURLsAllowRegexp(regexp.MustCompile("^https?://foo")),

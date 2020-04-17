@@ -141,6 +141,7 @@ func newCloudFrontStorageMiddleware(storageDriver storagedriver.StorageDriver, o
 		}
 	}
 
+	ctx := context.Background()
 	// parse ipfilteredby
 	var awsIPs *awsIPs
 	if i, ok := options["ipfilteredby"]; ok {
@@ -149,7 +150,7 @@ func newCloudFrontStorageMiddleware(storageDriver storagedriver.StorageDriver, o
 			case "", "none":
 				awsIPs = nil
 			case "aws":
-				awsIPs = newAWSIPs(ipRangesURL, updateFrequency, nil)
+				awsIPs = newAWSIPs(ctx, ipRangesURL, updateFrequency, nil)
 			case "awsregion":
 				var awsRegion []string
 				if i, ok := options["awsregion"]; ok {
@@ -157,7 +158,7 @@ func newCloudFrontStorageMiddleware(storageDriver storagedriver.StorageDriver, o
 						for _, awsRegions := range strings.Split(regions, ",") {
 							awsRegion = append(awsRegion, strings.ToLower(strings.TrimSpace(awsRegions)))
 						}
-						awsIPs = newAWSIPs(ipRangesURL, updateFrequency, awsRegion)
+						awsIPs = newAWSIPs(ctx, ipRangesURL, updateFrequency, awsRegion)
 					} else {
 						return nil, fmt.Errorf("awsRegion must be a comma separated string of valid aws regions")
 					}

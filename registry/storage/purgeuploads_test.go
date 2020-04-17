@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/docker/distribution/testutil/tracing"
 	"path"
 	"strings"
 	"testing"
@@ -14,7 +15,7 @@ import (
 
 func testUploadFS(t *testing.T, numUploads int, repoName string, startedAt time.Time) (driver.StorageDriver, context.Context) {
 	d := inmemory.New()
-	ctx := context.Background()
+	ctx := tracing.GetContext(t)
 	for i := 0; i < numUploads; i++ {
 		addUploads(ctx, t, d, uuid.Generate().String(), repoName, startedAt)
 	}

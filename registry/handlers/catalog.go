@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,7 +22,7 @@ func catalogDispatcher(ctx *Context, r *http.Request) http.Handler {
 	}
 
 	return handlers.MethodHandler{
-		"GET": http.HandlerFunc(catalogHandler.GetCatalog),
+		"GET": tracinghttp.TracedHTTPHandlerFunc(catalogHandler.GetCatalog),
 	}
 }
 

@@ -83,6 +83,7 @@ func TestCheckAPI(t *testing.T) {
 
 // TestCatalogAPI tests the /v2/_catalog endpoint
 func TestCatalogAPI(t *testing.T) {
+	ctx := tracing.GetContext(t)
 	chunkLen := 2
 	env := newTestEnv(t, false)
 	defer env.Shutdown()
@@ -98,7 +99,7 @@ func TestCatalogAPI(t *testing.T) {
 
 	// -----------------------------------
 	// try to get an empty catalog
-	resp, err := tracinghttp.Get(tracing.GetContext(t), catalogURL)
+	resp, err := tracinghttp.Get(ctx, catalogURL)
 	if err != nil {
 		t.Fatalf("unexpected error issuing request: %v", err)
 	}
@@ -132,7 +133,7 @@ func TestCatalogAPI(t *testing.T) {
 		createRepository(env, t, image, "sometag")
 	}
 
-	resp, err = http.Get(catalogURL)
+	resp, err = tracinghttp.Get(ctx, catalogURL)
 	if err != nil {
 		t.Fatalf("unexpected error issuing request: %v", err)
 	}
@@ -170,7 +171,7 @@ func TestCatalogAPI(t *testing.T) {
 		t.Fatalf("unexpected error building catalog url: %v", err)
 	}
 
-	resp, err = http.Get(catalogURL)
+	resp, err = tracinghttp.Get(ctx, catalogURL)
 	if err != nil {
 		t.Fatalf("unexpected error issuing request: %v", err)
 	}
@@ -2067,7 +2068,7 @@ func newTestEnvWithConfig(t *testing.T, config *configuration.Configuration) *te
 	ctx := tracing.GetContext(t)
 
 	app := NewApp(ctx, config)
-	server := httptest.NewServer(tracinghttp.TracedHTTPHandler(handlers.CombinedLoggingHandler(os.Stderr, app)))
+	server := httptest.NewServer(handlers.CombinedLoggingHandler(os.Stderr, app))
 	builder, err := v2.NewURLBuilderFromString(server.URL+config.HTTP.Prefix, false)
 
 	if err != nil {
@@ -2516,6 +2517,7 @@ func TestRegistryAsCacheMutationAPIs(t *testing.T) {
 
 	resp := putManifest(t, "putting unsigned manifest", manifestURL, "", sm)
 	checkResponse(t, "putting signed manifest to cache", resp, errcode.ErrorCodeUnsupported.Descriptor().HTTPStatusCode)
+	defer resp.Body.Close()
 
 	// Manifest Delete
 	resp, _ = httpDelete(ctx, manifestURL)

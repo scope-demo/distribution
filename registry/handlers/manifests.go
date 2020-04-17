@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"mime"
 	"net/http"
 	"strings"
@@ -58,13 +59,13 @@ func manifestDispatcher(ctx *Context, r *http.Request) http.Handler {
 	}
 
 	mhandler := handlers.MethodHandler{
-		"GET":  http.HandlerFunc(manifestHandler.GetManifest),
+		"GET":  tracinghttp.TracedHTTPHandlerFunc(manifestHandler.GetManifest),
 		"HEAD": http.HandlerFunc(manifestHandler.GetManifest),
 	}
 
 	if !ctx.readOnly {
-		mhandler["PUT"] = http.HandlerFunc(manifestHandler.PutManifest)
-		mhandler["DELETE"] = http.HandlerFunc(manifestHandler.DeleteManifest)
+		mhandler["PUT"] = tracinghttp.TracedHTTPHandlerFunc(manifestHandler.PutManifest)
+		mhandler["DELETE"] = tracinghttp.TracedHTTPHandlerFunc(manifestHandler.DeleteManifest)
 	}
 
 	return mhandler

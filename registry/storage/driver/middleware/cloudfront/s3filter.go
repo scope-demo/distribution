@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/distribution/testutil/tracinghttp"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -23,8 +23,9 @@ const (
 
 // newAWSIPs returns a New awsIP object.
 // If awsRegion is `nil`, it accepts any region. Otherwise, it only allow the regions specified
-func newAWSIPs(host string, updateFrequency time.Duration, awsRegion []string) *awsIPs {
+func newAWSIPs(ctx context.Context, host string, updateFrequency time.Duration, awsRegion []string) *awsIPs {
 	ips := &awsIPs{
+		ctx: ctx,
 		host:            host,
 		updateFrequency: updateFrequency,
 		awsRegion:       awsRegion,
@@ -39,6 +40,7 @@ func newAWSIPs(host string, updateFrequency time.Duration, awsRegion []string) *
 
 // awsIPs tracks a list of AWS ips, filtered by awsRegion
 type awsIPs struct {
+	ctx context.Context
 	host            string
 	updateFrequency time.Duration
 	ipv4            []net.IPNet
@@ -61,12 +63,13 @@ type prefixEntry struct {
 	Service    string `json:"service"`
 }
 
-func fetchAWSIPs(url string) (awsIPResponse, error) {
+func fetchAWSIPs(ctx context.Context, url string) (awsIPResponse, error) {
 	var response awsIPResponse
-	resp, err := http.Get(url)
+	resp, err := tracinghttp.Get(ctx, url)
 	if err != nil {
 		return response, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
 		return response, fmt.Errorf("failed to fetch network data. response = %s", body)
@@ -82,7 +85,7 @@ func fetchAWSIPs(url string) (awsIPResponse, error) {
 // tryUpdate attempts to download the new set of ip addresses.
 // tryUpdate must be thread safe with contains
 func (s *awsIPs) tryUpdate() error {
-	response, err := fetchAWSIPs(s.host)
+	response, err := fetchAWSIPs(s.ctx, s.host)
 	if err != nil {
 		return err
 	}
